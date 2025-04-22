@@ -16,6 +16,21 @@ execute:
 jupyter: iprism
 ---
 
+```{python}
+#| eval: false
+# -----------------------------------------------------------------------------
+# Carlos Rodriguez, PhD. CU Anschutz Dept. of Family Medicine
+# The following report renders code that conducts all pairwise comparisons of
+# correlation coefficients generated from variables arranged in columns in a 
+# pandas data frame. 
+# Output is to generate tables in .csv format to facilitate wading through 
+# results
+
+# Relies on custom functions in the 
+# [dfm_tb](https://github.com/carlosivanr/dfm_tb) package 
+# -----------------------------------------------------------------------------
+```
+
 ```{python, import libraries}
 # Data manipulation tools
 import pandas as pd
@@ -30,6 +45,8 @@ from scipy.stats import norm
 from dfm_tb.stats import get_steigers_z
 from dfm_tb.utilities import format_pval_df
 ```
+
+
 
 ```{python}
 # Specify the project root directory

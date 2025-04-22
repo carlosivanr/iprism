@@ -16,6 +16,17 @@ execute:
 jupyter: iprism
 ---
 
+```{python}
+#| eval: false
+# -----------------------------------------------------------------------------
+# Carlos Rodriguez, PhD. CU Anschutz Dept. of Family Medicine
+# The following report relies on visually inspected data to produce a report
+# displaying the analyses outlined in the statistical analysis plan.
+# Relies on custom functions in the 
+# [dfm_tb](https://github.com/carlosivanr/dfm_tb) package 
+# -----------------------------------------------------------------------------
+```
+
 ```{python, import libraries}
 # Data manipulation tools
 import os
