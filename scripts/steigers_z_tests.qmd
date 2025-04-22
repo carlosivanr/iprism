@@ -1,0 +1,94 @@
+---
+title: "iPRISM Correlation Tests"
+# format: docx # if output is docx, table formatting from SAS output is lost
+format:
+  html:
+    embed-resources: true
+    toc: true
+    number-sections: true
+
+
+#format: html
+
+execute: 
+  echo: false
+  warning: false
+jupyter: iprism
+---
+
+```{python, import libraries}
+# Data manipulation tools
+import pandas as pd
+import numpy as np
+from itertools import combinations
+
+# Tables & statistics
+from scipy.stats import norm
+
+# Custom functions
+# iprism_fx found in Lib/site-packages
+from dfm_tb.stats import get_steigers_z
+from dfm_tb.utilities import format_pval_df
+```
+
+```{python}
+# Specify the project root directory
+proj_root = 'C:\\Users\\rodrica2\\OneDrive - The University of Colorado Denver\\Documents\\DFM\\projects\\iPRISM'
+```
+
+```{python}
+# Specify the file to import after manual inspection/manipulation
+file = proj_root + "\\data\\corr_data.csv"
+
+# Import data
+df = pd.read_csv(file, header = 0)
+```
+
+# Pairwise comparisons of correlations between REAIM measures
+```{python}
+# subset to the measures of interest
+reaim = [
+  "Rper",
+  "E",
+  "Aper",
+  "Iadapt",
+  "Icost",
+  "Ifid",
+  "Mper",
+  "Req",
+  "Eeq",
+  "Aeq",
+  "Meffeq"
+  ]
+```
+
+```{python}
+```
+
+```{python}
+reaim_results = get_steigers_z(df[reaim], "spearman")
+```
+
+```{python}
+reaim_results.to_csv(proj_root + "\\data\\reaim_corr_test_results.csv", index=False)
+```
+
+# Pairwise comparisons of correlations between PRISM measures
+```{python}
+prism = [
+  "EXPcom",
+  "EXPorg",
+  "CHcom",
+  "CHorg",
+  "res",
+  "CHexenv"
+]
+```
+
+```{python}
+prism_results = get_steigers_z(df[prism], "spearman")
+```
+
+```{python}
+prism_results.to_csv(proj_root + "\\data\\prism_corr_test_results.csv", index=False)
+```

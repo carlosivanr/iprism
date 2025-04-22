@@ -1,0 +1,9 @@
+/iprism
+/data
+/analysis_plan
+
+*.html
+*.csv
+*.docx
+*.xlsx
+*.pdf
