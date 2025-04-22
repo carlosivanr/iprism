@@ -159,8 +159,7 @@ for prefix in prefixes:
 # There are no missing values, because each measure is coalesced.
 tab1 = df[prefixes].copy()
 
-# output to .csv
-# tab1.to_csv(proj_root + "\\data\\corr_data.csv")
+
 ```
 
 ```{python}
@@ -179,6 +178,8 @@ tab1.loc[tab1['N_non_missing_Icomp']  <2, 'Icomp'] = np.nan
 # Remove the N_non_missing_Icomp column
 tab1 = tab1.drop('N_non_missing_Icomp', axis=1)
 
+# output the items only data set to to .csv for comparisons of correlations
+tab1.to_csv(proj_root + "\\data\\corr_data.csv")
 ```
 
 ```{python}
@@ -1260,7 +1261,6 @@ GT(pairwise_results.reset_index().rename(columns={'index': ''})).tab_spanner(
 <!-- LINEAR MIXED MODEL WITH PRISM -->
 
 ```{python}
-
 # Need tab1 and need the participant identifiers
 h1 = tab3[prism].copy()
 
@@ -1560,6 +1560,12 @@ for i in range(len(reach_non_eq)):
 ```{python}
 # For each element in the reach_vs_eq results loop through the inner list to round and set the index
 reach_vs_eq = [[df.round(2).set_index("Effect") for df in inner_list] for inner_list in reach_vs_eq]
+
+# In the remaining output:
+# Each domain is indexed by [x][y], where x is a value of 0-3
+#  where each x represents a domain Reach, effectiveness, adoption, maintenance
+#  and y is a value between 0-2 and represents separate tables such as the
+#  the type3 results, the ls means, and the differences in means
 ```
 
 ## Reach vs Reach Equity
@@ -1594,7 +1600,7 @@ reach_vs_eq[1][1]
 reach_vs_eq[1][2]
 ```
 
-## Maintenance vs Maintenance Equity
+## Adoption vs Adoption Equity
 ### Type3
 ```{python}
 reach_vs_eq[2][0]
@@ -1610,124 +1616,18 @@ reach_vs_eq[2][1]
 reach_vs_eq[2][2]
 ```
 
-# Steiger's Z-tests
-
+## Maintenance vs Maintenance Equity
+### Type3
 ```{python}
-# Define a function to perform Steiger's Z-test
-
-
+reach_vs_eq[3][0]
 ```
 
+### LS Means
 ```{python}
-#| eval: false
-# FIRST DRAFT OF THE STEIGER Z TEST FOR LOOP BUT IT IS NOT RIGHT BC OF THE TRIPLICATES
-# r_vars = prefixed_df.columns[0:4].tolist()
-
-# # Empty list to store results
-# steiger_results = []
-
-# for r_var in r_vars:
-#     # Name of vars without the r_var
-#     remaining_vars = r_vars.copy()
-#     remaining_vars.remove(r_var)
-
-#     # Count the number of elements in remaining_vars
-
-#     # For loop, for every element in remaining vars
-#     # get the correlation between r_var and remaining_var[i]
-#     subset_a = prefixed_df[[r_var, remaining_vars[0]]].dropna()
-#     r_a, p_a = spearmanr(subset_a.iloc[:,0], subset_a.iloc[:,1])
-
-#     subset_b = prefixed_df[[r_var,  remaining_vars[0], remaining_vars[1]]].dropna()
-#     r_b, p_b = spearmanr(subset_b.iloc[:,0], subset_b.iloc[:,1])
-
-#     #
-#     subset_c = prefixed_df[[remaining_vars[0], remaining_vars[1]]].dropna()
-#     r_c, p_c = spearmanr(subset_c.iloc[:,0], subset_c.iloc[:,1])
-
-#     # *** Still need to figure out how to get the subsets right,
-#     # they need to be in the lowest number of complete cases in 
-#     # triplicates
-#     # Steigers would go here.
-
-
-
-
-#     for r_var2 in r_vars:
-#         # Compute Spearman correlation
-#         subset = prefixed_df[[r_var, r_var2]].dropna()
-
-#         # Get the ids to subset all remaining columns using
-#         # the same exact rows
-#         ids = subset.index
-
-#         # Calculate all of the pairwise correlations
-#         corr_mat = prefixed_df.loc[ids].corr(method = "spearman")
-
-
-
-
-#         # Get the first corr value
-#         r_value, p_value = spearmanr(subset.iloc[:,0], subset.iloc[:,1])
-
-#         # Append results as a dictionary
-#         correlation_results.append({
-#             "Reach Variable": r_var,
-#             "PRISM Variable": p_var,
-#             "Spearman r-value": r_value.round(2),
-#             "p-value": p_value
-#         })
-
-
-# GT(pd.DataFrame(correlation_results))
+reach_vs_eq[3][1]
 ```
 
-
+### Diffs
 ```{python}
-# Create a test loop to display the combinations
-r_vars = prefixed_df.columns[0:4].tolist()
-
-for i in range(len(r_vars)):
-    remaining_vars = r_vars.copy()
-    remaining_vars.remove(r_vars[i])
-
-    for j in range(len(remaining_vars)):
-      remaining_vars_2 = remaining_vars.copy()
-      remaining_vars_2.remove(remaining_vars[j])
-      
-      for k in range(len(remaining_vars_2)):
-        print([r_vars[i], remaining_vars[j], remaining_vars_2[k]])
-
-
-        # Get the triplicate subset to maximize the n
-        subset = prefixed_df[[r_vars[i], remaining_vars[j], remaining_vars_2[k]]].dropna()
-
-        # Specify the triplicate
-        triplicate = [r_vars[i], remaining_vars[j], remaining_vars_2[k]]
-
-        # Sort the triplicate to make a label
-        triplicate.sort()
-
-        # Label
-        label = '-'.join(triplicate)
-
-        # *** Will need the actual triplicate for the order of the correlations
-        # AND the label to avoid having to conduct un-necessary correlations or
-        # filter out
-
-        # correlations, the [0] indexes just the r value and not the p value
-        r1 = spearmanr(subset.iloc[:,0], subset.iloc[:,1])[0]
-        r2 = spearmanr(subset.iloc[:,0], subset.iloc[:,2])[0]
-        r3 = spearmanr(subset.iloc[:,1], subset.iloc[:,2])[0]
-
-
-        # Steiger's Z-test goes here, after having r1, r2, and r3
-
-        # Could add a way to sort the triplicates, and if it is not in the results data frame
-        # conduct the z-test and append to results data frame, else skip to the next
-
-
-
-
-
+reach_vs_eq[3][2]
 ```

@@ -46,8 +46,6 @@ from dfm_tb.stats import get_steigers_z
 from dfm_tb.utilities import format_pval_df
 ```
 
-
-
 ```{python}
 # Specify the project root directory
 proj_root = 'C:\\Users\\rodrica2\\OneDrive - The University of Colorado Denver\\Documents\\DFM\\projects\\iPRISM'
@@ -68,18 +66,9 @@ reaim = [
   "Rper",
   "E",
   "Aper",
-  "Iadapt",
-  "Icost",
-  "Ifid",
+  "Icomp",
   "Mper",
-  "Req",
-  "Eeq",
-  "Aeq",
-  "Meffeq"
-  ]
-```
-
-```{python}
+]
 ```
 
 ```{python}
@@ -88,6 +77,24 @@ reaim_results = get_steigers_z(df[reaim], "spearman")
 
 ```{python}
 reaim_results.to_csv(proj_root + "\\data\\reaim_corr_test_results.csv", index=False)
+```
+
+# Pariwise comparisons of correlations between equity REAIM measures
+```{python}
+equity = [
+  'Req',
+  'Eeq',
+  "Aeq",
+  'Meffeq'
+]
+```
+
+```{python}
+equity_results = get_steigers_z(df[equity], "spearman")
+```
+
+```{python}
+equity_results.to_csv(proj_root + "\\data\\equity_corr_test_results.csv", index=False)
 ```
 
 # Pairwise comparisons of correlations between PRISM measures
@@ -108,4 +115,13 @@ prism_results = get_steigers_z(df[prism], "spearman")
 
 ```{python}
 prism_results.to_csv(proj_root + "\\data\\prism_corr_test_results.csv", index=False)
+```
+
+# Pairwise comparisons of correlations between PRISM and REAIM measures
+```{python}
+prism_reach_results = get_steigers_z(df[prism + reaim], "spearman")
+```
+
+```{python}
+prism_reach_results.to_csv(proj_root + "\\data\\prism_vs_reach_corr_test_results.csv", index=False)
 ```
