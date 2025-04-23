@@ -836,8 +836,6 @@ prism_p_matrix
 - Data available for 127 participants
 ```{python}
 # Intraclass correlation within team members
-# Needs work to consolidate team-members
-
 icc_data = df.copy()
 
 # Drop missing values in teamcode
@@ -878,48 +876,112 @@ icc_data.to_csv(proj_root + "\\data\\icc_data.csv")
 #| eval: false
 # statsmodel version of calculating ICC
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
+from statsmodels.formula.api import mixedlm
 
-# Stats models
-model = smf.mixedlm("Reach ~ 1", icc_data, groups=icc_data["teamcode"]).fit()
+# Create a test df consisting of just the reach variable
+test_df = icc_data[["Reach", "teamcode"]].copy()
+test_df = test_df.dropna()
 
-# Display the model summary
-# The Intercept row Coef. and Std.Err. refer to the fixed effects output in SAS (both match)
-# The Group Var row Coef. refers to random effects variance, but the Std.Err. does not match SAS
-model.summary()
+# Save the test_df to .csv to double check with R or SAS
+test_df.to_csv("C:\\Users\\rodrica2\\OneDrive - The University of Colorado Denver\\Documents\\DFM\\projects\\iPRISM\\data\\icc_test.csv")
 
-# Extract variance components
-var_between = model.cov_re.iloc[0, 0]  # Between-group (team) variance/ Random Effects
-var_within = model.scale  # Within-group variance/Residual
+  # --- Step 1: Fit model function ---
+def fit_model_and_get_vars(data):
+  # Build the formula
+  formula = f"{y} ~ 1"
+
+  try:
+      model = mixedlm(formula, data=data, groups=data[k])
+      result = model.fit()
+      bvar = result.cov_re.iloc[0, 0]        # Between-group (random intercept) variance
+      wvar = result.scale                     # Residual (within-group) variance
+      se_bvar = result.bse_re.iloc[0]         # Between-group standard error from model
+      return bvar, wvar, se_bvar
+  except Exception:
+      return np.nan, np.nan, np.nan  # Handle convergence failures gracefully
 
 
 
-se_between = float(model.summary().tables[1].data[1][2])
+# --- Step 2: Bootstrap procedure ---
+def bootstrap_variance_components(test_df, n_boot=1000):
+  
+  # Initialize an empty list
+  boot_results = []
 
-# Extract standard errors
-se_between = model.bse_re.iloc[0]  # SE of random intercept variance
-se_within = model.bse.iloc[0]  # SE of residual variance
+  # Get the unique cluster value
+  group_ids = test_df[k].unique()
+
+  for _ in range(n_boot):
 
 
-# Compute variance of ICC using the Delta Method
-var_icc = (icc**2) * ((se_between**2 / var_between**4) + (se_within**2 / var_within**4))
+    # Sample clusters with replacement
+    sampled_ids = np.random.choice(group_ids, size=len(group_ids), replace=True)
+
+    # Concatenate a data frame consisting of values from the sample ids
+    boot_df = pd.concat([test_df[test_df[k] == gid] for gid in sampled_ids])
+
+    bvar, wvar, se_bvar = fit_model_and_get_vars(boot_df)
+
+    # If the result is not a nan, then append results
+    if not np.isnan(bvar):
+        boot_results.append((bvar, wvar))
+
+  return pd.DataFrame(boot_results, columns=["bvar", "wvar"])
+
+
+# def get_iccs(data, y, k):
+  """
+  Parameters:
+  y: string variable referencing the outcome column
+  k: string variable referencing the clustering column
+
+  """
+  # subset the data
+data = data[[y, k]]
+
+
+
+
+
+# --- Step 3: Calculate SEs and ICC ---
+# Boot strap the model, to get n_boot bvars and wvars
+# These will be used later on to calculated the std of the variance
+# components. Once the variance components are estimated, they can 
+# be used to calculate the variance of the ICC
+boot_df = bootstrap_variance_components(test_df, n_boot=100)
+
+# Drop failed fits (NaNs)
+boot_df = boot_df.dropna()
+
+
+
+# Point estimates from full data
+bvar_hat, wvar_hat, se_wvar = fit_model_and_get_vars(test_df)
+
+
+# Estimate SEs
+se_bvar = boot_df["bvar"].std()
+se_wvar = boot_df["wvar"].std()
+
+
+# Compute ICC
+icc = bvar_hat / (bvar_hat + wvar_hat)
+
+# Delta method for SE of ICC
+var_icc = se_bvar**2 * (wvar_hat**2 / (bvar_hat + wvar_hat)**4) + \
+          se_wvar**2 * (bvar_hat**2 / (bvar_hat + wvar_hat)**4)
+
+var_icc2 = se_bvar**2 * ((wvar_hat**2) / (bvar_hat + wvar_hat)**4) + \
+    (se_wvar**2) * ((bvar_hat**2) / (wvar_hat + bvar_hat)**4)
+
 se_icc = np.sqrt(var_icc)
 
-# Compute p-value for ICC ------ THIS DOES NOT MATCH SAS
-p_value_icc = model.cov_re.iloc[0, 0] / model.bse_re.iloc[0]  # Compute Z-score
-p_value_icc = 2 * (1 - norm.cdf(abs(p_value_icc)))  # Two-tailed test
+# 95% CI
+icc_lcl = icc - 1.96 * se_icc
+icc_ucl = icc + 1.96 * se_icc
 
-# Compute ICC, the between group variance divided by the sum of the between
-# and within group variance
-icc = bvar / (bvar + wvar)
-
-# Compute the p-value
-
-
-
-# Compute the confidence interval
-
-print(f"ICC: {icc:.4f}")
+print(f"ICC: {icc:.3f}")
+print(f"95% CI: [{icc_lcl:.3f}, {icc_ucl:.3f}]")
 ```
 
 ```{python}
