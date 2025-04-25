@@ -85,7 +85,11 @@ equity = [
   'Req',
   'Eeq',
   "Aeq",
-  'Meffeq'
+  'Meffeq',
+  "Rper",
+  "E",
+  "Aper",
+  "Mper",
 ]
 ```
 
