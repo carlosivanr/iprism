@@ -893,23 +893,25 @@ for measure in all_variables:  # Add more measures as needed
     # Ensure that there are two or more entries per measure
     temp = icc_data[['teamcode', measure]].copy()
 
-    #
+    # Count the number of rows per teamcode, then filter those that have more than 2
     teams = temp.groupby('teamcode').size().reset_index(name = "count").query("count > 1")
 
-    # Number of rows
+    # Count the number of observations where there are more than one entry per teamcode
     teams['count'].sum()
 
-    # filter the icc data
+    # filter the icc data, i.e. create a subset
     temp = temp[temp['teamcode'].isin(teams['teamcode'])]
 
     # Create a data frame where only the teamcode and the measure are present
     df_to_sas = temp.copy()
     df_to_sas = df_to_sas[['teamcode', measure]].reset_index(drop = True)
 
-    # rename the Prism/Re-AIM measure to "measure" to assist in looping
+    # rename the Prism/Re-AIM measure to "measure" to assist in looping once
+    # the data is sent to SAS
     df_to_sas["measure"] = df_to_sas[measure]
 
-    # Drop the column otherwise the length of the name is too long for SAS
+    # Drop the looping variable column, otherwise the length of the name is too
+    # long for SAS.
     df_to_sas.drop(columns=[measure], inplace=True)
 
     # SAS section begin -------------------------------------------------------
@@ -963,40 +965,38 @@ for measure in all_variables:  # Add more measures as needed
 
     """)
 
-    sas_to_pd = sas.sasdata("icc_jun", libref = "work")
+    # Retrieve the SAS table icc_jun and load it int the Python env as a pandas
+    # data frame
+    sas_icc = sas.sasdata("icc_jun", libref = "work").to_df()
     
-    # Convert the SAS dataset to a Pandas DataFrame
-    sas_icc = sas_to_pd.to_df()
-
     # Calculate the Z value and the p value
+    # n.b. the ZValue of the SAS table corresponds to the Estimate which is why
+    # a Z value is calculated manually.
     sas_icc["z-value"] = sas_icc["icc"]/sas_icc["se_icc"]
 
-    # Compute two-tailed p-value
+    # Compute two-tailed p-value, returns a numpy array
     pval = 2 * (1 - norm.cdf(abs(sas_icc["z-value"])))
 
-    # the two_tailed test returns an array, convert to float
-    pval = pval[0]
-
     # Format the p-value to 4 digits
-    pval = format_pval_flt(pval, 4)
+    # Since pval is numpy array, index the 1st value as a float for formatting 
+    pval = format_pval_flt(pval[0], 4)
 
+    # Save the value in the table
     sas_icc["p-value"] = pval
 
-    # Format the ICCs
-    sas_icc['icc_LCL'] = sas_icc['icc_LCL'].round(2)
-    sas_icc['icc_UCL'] = sas_icc['icc_UCL'].round(2)
+    # Round columns
+    cols_to_round = ['icc_LCL', 'icc_UCL', 'icc']
+    sas_icc[cols_to_round] = sas_icc[cols_to_round].round(2)
 
-    # Set the LCL to zero if it's negative
+    # Set the LCL to zero if it's negative, since an icc is not supposed to be
+    # lower than 0, although mathematically it can be less than 0
     sas_icc["icc_LCL"] = sas_icc["icc_LCL"].clip(lower=0)
     
-    # Format the ICCs
-    sas_icc['icc'] = sas_icc['icc'].round(2)
-
-    # Select the row and columns of interest 
+    # Select the columns of interest 
     sas_icc = sas_icc[["icc", "p-value", "icc_LCL", "icc_UCL"]]
 
-    # Reset the index to the variable measure
-    sas_icc.index = [measure]    
+    # Reset the index to the variable measure to display
+    sas_icc.index = [measure]
 
     icc_results = pd.concat([icc_results, sas_icc], axis=0)
 
