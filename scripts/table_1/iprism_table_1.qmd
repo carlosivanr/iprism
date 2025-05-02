@@ -1,0 +1,107 @@
+---
+title: "iPRISM Table 1 - sub tables"
+# format: docx # if output is docx, table formatting from SAS output is lost
+format:
+  html:
+    embed-resources: true
+    toc: true
+    number-sections: true
+
+
+#format: html
+
+execute: 
+  echo: false
+  warning: false
+jupyter: iprism
+---
+
+```{python}
+#| eval: false
+# -----------------------------------------------------------------------------
+# Carlos Rodriguez, PhD. CU Anschutz Dept. of Family Medicine
+# The following report relies on visually inspected data to produce a report
+# displaying the analyses outlined in the statistical analysis plan.
+# Relies on custom functions in the 
+# [dfm_tb](https://github.com/carlosivanr/dfm_tb) package 
+# -----------------------------------------------------------------------------
+```
+
+```{python, import libraries}
+# Data manipulation tools
+import os
+import pandas as pd
+import numpy as np
+
+# Tables and plotting
+from great_tables import GT, md, html, style
+
+# Custom functions
+from dfm_tb.utilities import format_pval_df, format_pval_flt
+
+from dfm_tb.tables import all_apply, freq_prop
+```
+
+```{python}
+# Specify the project root directory
+proj_root = 'C:\\Users\\rodrica2\\OneDrive - The University of Colorado Denver\\Documents\\DFM\\projects\\iPRISM'
+```
+
+```{python}
+# Specify the file to import after manual inspection/manipulation
+file = proj_root + "\\data\\iPRISM_data_BF.xlsx"
+
+# Import data
+df = pd.read_excel(file, header = 0)
+
+# Remove those with flag for removal == 1
+df = df[df["flag_for_removal"]== 0]
+
+# Remove duplicates
+# BF suggested we take the first row according to the green over red highlights
+df = df.sort_values('Entry Date', ascending = True).groupby('User Id', group_keys = False).first()
+
+# *** Address the issue of the 4 participants that filled out planning,
+# implementing, and sustaining questions
+# Option 1: remove the rows
+# df = df.drop(index=[508, 509, 512, 514])
+
+# Option 2: Keep only the responses according to their selected impstage
+# If impstage == "planning", set any prefix that ends in 2 or 3 to NA
+# If impstage == "implementing", set any prefix that ends in 1 or 3 to NA
+# implemented downstream
+```
+
+```{python}
+# Create a table of participant characteristics
+# Need 11 columns total. 
+from iprism_fx import tables
+
+sub_tab1 = df[['indvteam']]
+# If missing set to uknown
+sub_tab1 = sub_tab1[['indvteam']].fillna("unknown")
+tables.freq_prop(sub_tab1, 'indvteam')
+```
+
+```{python}
+
+# PROFESSIONAL ROLE -------------------------------------------------
+# tab3 is used downstream, pulled up from the bottom to the top to create tables
+# Create a new data frame with the columns of interest
+roles = ["Clinician", "Quality improvement specialist", "Researcher", "Public health practitioner",
+"Program manager", "Implementation specialist", "Clinical administrator (e.g., Medical director)",
+"Academic administrator (e.g., Department chair, dean)", "Other"]
+
+sub_tab2 = df[roles].copy()  #.mean(axis=1)
+
+tables.all_apply(sub_tab2, roles,'Professional Role', True)
+```
+```{python}
+
+# SETTING -------------------------------------------------
+settings = ["Community", "Clinical", "Public health", "Other.1"]
+sub_tab3 = df[settings].copy()  #.mean(axis=1)
+sub_tab3.rename(columns={"Other.1": "Other"}, inplace=True)
+settings = ["Community", "Clinical", "Public health", "Other"]
+tables.all_apply(sub_tab3, settings, 'Setting', True)
+```
